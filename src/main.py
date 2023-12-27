@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request, HTTPException, Form
 import pushup
 
 app = FastAPI()
-KEY = os.environ.get('AI_API_KEY')
+KEY = os.environ.get('AI_API_KEY', b'OR9Hdu3NKcaT4PPHJni3NAepp61DL_SGeOmB2Eg7PT0=')
 
 
 @app.get("/")
