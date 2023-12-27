@@ -1,14 +1,14 @@
+import os
+
 import uvicorn
+from cryptography.fernet import Fernet
+from fastapi import FastAPI, Request, HTTPException, Form
 
 import pushup
-from fastapi import FastAPI, HTTPException, Form
-from cryptography.fernet import Fernet
 
 app = FastAPI()
+KEY = os.environ.get('AI_API_KEY')
 
-# Generate a secret key for encryption
-secret_key = Fernet.generate_key()
-cipher_suite = Fernet(secret_key)
 
 @app.get("/")
 def central():
@@ -20,27 +20,21 @@ def test():
     pu = pushup.calculate_pushups()
     return {"hehe": str(pu)}
 
-class VideoLinkWithToken:
-    def __init__(self, video_url: str):
-        self.video_url = video_url
-        self.encrypted_token = self.encrypt_token()
 
-    def encrypt_token(self):
-        token = "your_secret_token"  # Replace with your secret token
-        encrypted_token = cipher_suite.encrypt(token.encode())
-        return encrypted_token
+def decrypt_message(encrypted_message):
+    f = Fernet(KEY)
+    decrypted_message = f.decrypt(encrypted_message).decode()
+    return decrypted_message
+
 
 @app.post('/count_pushups')
-async def count_pushups_route(video_link_with_token: VideoLinkWithToken = Form(...)):
+async def count_pushups_route(encrypted_video_url: str = Form(...)):
     try:
-        decrypted_token = cipher_suite.decrypt(video_link_with_token.encrypted_token).decode()
-        if decrypted_token == "your_secret_token":  # Replace with your secret token
-            pushup_count = pushup.count_pushups(video_link_with_token.video_url)
-            return {"pushup_count": pushup_count}
-        else:
-            raise HTTPException(status_code=401, detail="Unauthorized")
+        video_url = decrypt_message(encrypted_video_url)
+        pushup_count = pushup.count_pushups(video_url)
+        return {"pushup_count": pushup_count}
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Invalid input")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # Press the green button in the gutter to run the script.
